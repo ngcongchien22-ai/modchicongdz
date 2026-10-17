@@ -1,0 +1,27 @@
+(() => {
+ 'use strict';
+ const base=new URL('./',document.currentScript.src),page=document.body.dataset.fishPage;
+ const target=name=>new URL(name,base).href;
+ const remember=value=>{try{sessionStorage.setItem('fish-last-character',value);}catch{}};
+ if(page==='mod')remember(document.body.dataset.fishCharacter);
+ if(page==='select')document.querySelectorAll('.mod-card').forEach(link=>link.addEventListener('click',()=>remember(link.getAttribute('href').includes('/ignis/')?'ignis':'alok')));
+ let last;try{last=sessionStorage.getItem('fish-last-character');}catch{}
+ document.querySelectorAll('.fish-return-mod').forEach(link=>{link.href=target(last==='ignis'?'ignis/index.html':last==='alok'?'alok.html':'choose-mod.html');});
+ if(!['entry','select','mod'].includes(page))return;
+ const hash=new URLSearchParams(location.hash.slice(1));
+ if(hash.has('access_token')||hash.has('error_description')||new URLSearchParams(location.search).has('code')){
+  const callback=new URL('account.html?next=choose',base),code=new URLSearchParams(location.search).get('code');
+  if(code)callback.searchParams.set('code',code);callback.hash=location.hash;
+  location.replace(callback.href);return;
+ }
+ (async()=>{
+  try{
+   if(!window.supabase)throw Error('Không tải được kết nối đăng nhập. Hãy tải lại trang.');
+   const client=window.supabase.createClient('https://kokonossmhkjgngkcbcb.supabase.co','sb_publishable_DZrNfRCHTeQEfkZCg9-kkg_YLLNob3G');
+   const {data,error}=await client.auth.getSession();if(error)throw error;
+   if(!data.session){location.replace(target('account.html?next=choose'));return;}
+   if(page==='entry')location.replace(target('choose-mod.html'));
+   if(page==='select')window.fishShowWelcome?.();
+  }catch(error){const status=document.getElementById('fish-flow-status');if(status)status.textContent=error.message||'Không kiểm tra được đăng nhập. Hãy tải lại trang.';}
+ })();
+})();

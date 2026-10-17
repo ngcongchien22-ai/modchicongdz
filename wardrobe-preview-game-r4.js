@@ -21843,7 +21843,9 @@ void main() {
         }
         try {
             let P = function(B) {
-                return R.has(B) || R.set(B, S.loadAsync(a.images[B]).then(k => (k.colorSpace = ye,
+                if (B === 'assets/textures/skin.png' && r.picked('tattoo').id === 'tattoo-xoa-xam')
+                    B = 'assets/textures/skin-xoa-xam.png';
+                return R.has(B) || R.set(B, S.loadAsync(a.images[B] || B).then(k => (k.colorSpace = ye,
                 k.flipY = !a.nativeTextureOrigins?.includes(B),
                 k.anisotropy = Math.min(8, l.capabilities.getMaxAnisotropy()),
                 k))),
@@ -21851,7 +21853,14 @@ void main() {
             }
               , U = function(B) {
                 return A.has(B) || A.set(B, (async () => {
-                    let k = a.meshes[B];
+                    let k = B.includes('/bottom-soai-ca-bai-bien') ? await fetch('./assets/preview/beach-game-r3.json', {
+                        cache: 'no-store'
+                    }).then(response => {
+                        if (!response.ok)
+                            throw Error('Không tải được model quần');
+                        return response.json()
+                    }
+                    ) : a.meshes[B] || await window.alokLoadMesh(B);
                     if (!k)
                         throw Error("Thi\u1EBFu m\xF4 h\xECnh");
                     let X = new tn;
@@ -21883,10 +21892,10 @@ void main() {
                 antialias: !0,
                 alpha: !0
             }),
-            l.setClearColor(0x000000, 0),
             l.setPixelRatio(Math.min(devicePixelRatio, 2)),
             l.outputColorSpace = ye,
             i.append(l.domElement);
+            let fishRenderDirty = true;
             let u = new es
               , f = new ve(32,1,.05,50)
               , p = new oa(f,l.domElement);
@@ -21894,33 +21903,25 @@ void main() {
             p.enablePan = !1,
             p.minDistance = 2.6,
             p.maxDistance = 7,
-            p.maxPolarAngle = Math.PI * .8,
-            p.autoRotate = !0,
-            p.autoRotateSpeed = 4.8;
+            p.maxPolarAngle = Math.PI * .8;
             let _ = () => {
+                fishRenderDirty = true;
                 f.position.set(0, 1.16, 4.75),
                 p.target.set(0, 1, 0),
                 p.update()
             }
             ;
             _(),
-            u.add(new hs(16777215,5592405,2.6));
-            let y = new Ri(16777215,2.5);
+            u.add(new hs(16777215,11579568,3.6));
+            let y = new Ri(16777215,3.4);
             y.position.set(-3, 5, 5),
             u.add(y);
-            let m = new Ri(16777215,2);
+            let m = new Ri(16777215,2.6);
             m.position.set(3, 2, -3),
             u.add(m);
-            let d = new Se(new ss(.76,.86,.035,80),new wi({
-                color: 2894136,
-                roughness: .75
-            }));
-            d.position.y = -.025;
-            let w = new Se(new as(.79,.006,8,100),new Xn({
-                color: 11177951
-            }));
-            w.rotation.x = Math.PI / 2,
-            w.position.y = -.002;
+            let fishFrontLight = new Ri(16777215,1.8);
+            fishFrontLight.position.set(0, 2, 5),
+            u.add(fishFrontLight);
             let E = new tn;
             u.add(E);
             let S = new ls
@@ -22342,7 +22343,13 @@ void main() {
                 ;
                 return group;
             }
+            let lastTattoo;
             async function v(B) {
+                const tattoo = r.picked('tattoo', B).id;
+                if (tattoo !== lastTattoo) {
+                    A.clear();
+                    lastTattoo = tattoo;
+                }
                 const nextAssets = r.assets;
                 if (nextAssets !== a) {
                     a = nextAssets;
@@ -22352,7 +22359,7 @@ void main() {
                 let missing = o.find(H => r.picked(H, B).previewUnavailable);
                 let k = ++M
                   , X = r.getVersion()
-                  , G = o.map(H => {
+                  , G = o.filter(H => !(H === "face" && r.picked("hair", B).id === "hair-dau-nagi")).map(H => {
                     let st = r.picked(H, B);
                     return st.meshByVersion?.[X] || st.mesh || (H === "face" ? a.manifest.parts.head : null)
                 }
@@ -22360,7 +22367,8 @@ void main() {
                   , K = await Promise.all(G.map(U))
                   , newVfx = r.picked('top', B).id === 'top-sasuke' && a.sasukeVfxPreview ? await makeSasukeVfx(a.sasukeVfxPreview, P, f) : null;
                 k !== M && newVfx?.userData.dispose();
-                k === M && (fishVfx?.userData.dispose(),
+                k === M && (fishRenderDirty = true,
+                fishVfx?.userData.dispose(),
                 fishVfx = newVfx,
                 E.clear(),
                 K.forEach(H => E.add(H)),
@@ -22402,7 +22410,8 @@ void main() {
                   , k = i.clientHeight;
                 !B || !k || (l.setSize(B, k),
                 f.aspect = B / k,
-                f.updateProjectionMatrix())
+                f.updateProjectionMatrix(),
+                fishRenderDirty = true)
             }
             ;
             new ResizeObserver(O).observe(i),
@@ -22411,8 +22420,11 @@ void main() {
             ( () => {
                 const frame = () => {
                     fishVfx?.userData.tick(performance.now() / 1000);
-                    p.update(),
-                    l.render(u, f)
+                    const changed = p.update();
+                    if (fishRenderDirty || changed || p.autoRotate || fishVfx) {
+                        l.render(u, f);
+                        fishRenderDirty = false
+                    }
                 }
                 ;
                 const visibility = () => {

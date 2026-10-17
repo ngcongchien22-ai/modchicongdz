@@ -1,5 +1,6 @@
 (() => {
 const toggle=document.getElementById('fish-menu-toggle'),menu=document.getElementById('fish-menu');
+if(!toggle||!menu)return;
 function setOpen(open){menu.hidden=!open;toggle.setAttribute('aria-expanded',String(open));}
 toggle.addEventListener('click',()=>setOpen(menu.hidden));
 document.addEventListener('click',event=>{if(!event.target.closest('.fish-nav'))setOpen(false);});
